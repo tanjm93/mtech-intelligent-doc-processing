@@ -572,7 +572,8 @@ def main(stage,faiss_model_names,qa_model_names,main_path,source_filename_pdf,qu
         else:
             response = ' '.join(result['Answer'].tolist()) +'.'
             text = get_chat_completion(response)
-            final_answers = text_to_html(text)
+            final_answers_1 = text_to_html(text)
+            final_answers = final_answers_1.replace('**','')
         print(final_answers)
         return final_answers, component_names, component_image_map, unique_tool_list, unique_joint_list
 
