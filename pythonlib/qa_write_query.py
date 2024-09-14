@@ -15,6 +15,7 @@ import spacy
 import os
 import ast
 import shutil
+from groq import Groq
 # Ensure that nltk data is downloaded
 nltk.download('punkt')
 
@@ -401,6 +402,83 @@ def safe_literal_eval(val):
     if isinstance(val, str):
         return ast.literal_eval(val)
     return val  # If it's already a list or any other valid Python object, return as is
+def text_to_html(text):
+    # Split text into sections based on double newlines
+    sections = text.split('\n\n')
+
+    # Create the base HTML structure
+    html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        .header {
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+        p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Instructions for Working with High-Voltage Electrical Systems</div>
+"""
+
+    # Process each section
+    for section in sections:
+        section = section.strip()
+        if section.startswith('**'):
+            # It's a header
+            header = section.strip('* ').strip()
+            html += f'    <div class="header">{header}</div>\n'
+        elif section.startswith('*'):
+            # It's a bullet point
+            bullet_point = section.strip('* ').strip()
+            html += f'    <p>{bullet_point}</p>\n'
+        elif re.match(r'^\d+\.\s', section):
+            # It's a numbered list item
+            # Split by numbers followed by a period and space
+            items = re.split(r'(?=\d+\.\s)', section)
+            for item in items:
+                item = item.strip()
+                if item:  # Avoid adding empty strings
+                    html += f'    <p>{item}</p>\n'
+        elif section:
+            # It is a concluding paragraph or some other text
+            html += f'    <p>{section}</p>\n'
+
+    # Close the body and html tags
+    html += """</body>
+</html>
+"""
+    return html
+
+
+def get_chat_completion(prompt, model="llama3-70b-8192"):
+    client = Groq(
+        api_key='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',
+    )
+
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        model=model,
+    )
+
+    # Access the content directly from the message object
+    return chat_completion.choices[0].message.content
 
 def main(stage,faiss_model_names,qa_model_names,main_path,source_filename_pdf,question=None):
 #qa_write_query_main('write',faiss_model_names,qa_model_names,
@@ -492,7 +570,9 @@ def main(stage,faiss_model_names,qa_model_names,main_path,source_filename_pdf,qu
         if result is None or result.empty:
             final_answers = "The question is out of scope. please try with questions related to the document."
         else:
-            final_answers = ' '.join(result['Answer'].tolist()) +'.'
+            response = ' '.join(result['Answer'].tolist()) +'.'
+            text = get_chat_completion(response)
+            final_answers = text_to_html(text)
         print(final_answers)
         return final_answers, component_names, component_image_map, unique_tool_list, unique_joint_list
 

@@ -31,6 +31,7 @@ qa_model_names = 'distilbert-base-uncased-distilled-squad'
 product_type_file = os.path.join(app.config['DROP_DOWNS'], "product_type.txt")
 product_manufacturer_file = os.path.join(app.config['DROP_DOWNS'], "product_manufacturer.txt")
 product_manufactured_year_file = os.path.join(app.config['DROP_DOWNS'], "product_manufactured_year.txt")
+product_type_manufactured_year_file = os.path.join(app.config['DROP_DOWNS'], "product_type_manufactured_year_file.txt")
 
 global llmfolderstructure
 llmfolderstructure = ""
@@ -202,6 +203,15 @@ def aidocumentprocessing():
                     product_years = set()
 
                print('product_years file creation completed')
+
+               try:
+                    with open(product_type_manufactured_year_file, "r") as f:
+                        product_type_manufactured_year = set(f.read().splitlines())
+               except FileNotFoundError:
+                    product_type_manufactured_year = set()
+
+               print('product_type_manufactured_year_file COMPLETE file creation completed')
+               
                if product_type not in product_types:
                     with open(product_type_file, "a") as f:
                         f.write(product_type + "\n")
@@ -214,7 +224,10 @@ def aidocumentprocessing():
                     with open(product_manufactured_year_file, "a") as f:
                         f.write(product_manufactured_year + "\n")
                         f.close()
-
+               if filename not in product_type_manufactured_year:
+                    with open(product_type_manufactured_year_file, "a") as f:
+                        f.write(filename+"\n")
+                        f.close()
                return render_template("aidocumentprocessing.html", msg="File uploaded successfully.")
     except Exception as error:
         print("An exception occurred:", error)
@@ -467,41 +480,43 @@ def mechchatbotmanual():
 
 @app.route('/chatbot.html', methods=["GET", "POST"])
 def chatbot():
-    product_types = read_values_from_file(product_type_file)
+    app.secret_key = 'sujatha'
+    '''product_types = read_values_from_file(product_type_file)
     product_manufacturers = read_values_from_file(product_manufacturer_file)
-    product_years = read_values_from_file(product_manufactured_year_file)
+    product_years = read_values_from_file(product_manufactured_year_file)'''
+    product_type_manufactured_year = read_values_from_file(product_type_manufactured_year_file)
+    print(product_type_manufactured_year)
     filenamebeginswith=''
     try:
             if request.method == 'POST':
                 print('print statement: Post Method')
                 print('print statement: stage 1 :',request.form)
                 if 'extract' in request.form:
-                    read_product_type = request.form["product_type"]
+                    '''read_product_type = request.form["product_type"]
                     read_product_manufacturer = request.form["product_manufacturer"]
-                    read_product_manufactured_year = request.form["manufactured_year"]
-                    print('print statement: stage 2 : read_product_manufactured_year ')
+                    read_product_manufactured_year = request.form["manufactured_year"]'''
+                    read_product_type_manufactured_year = request.form["product_type_manufactured_year"]
+                    default_product_type_manufactured_year = read_product_type_manufactured_year
 
-                    session['read_product_type'] = read_product_type
-                    session['read_product_manufacturer'] = read_product_manufacturer
-                    session['read_product_manufactured_year'] = read_product_manufactured_year
+                    session['read_product_manufactured_year'] = read_product_type_manufactured_year
 
                     app.config["KDB_DIR"] = "static/knowledgedb"
                     #filenamebeginswith = f"{read_product_type}_{read_product_manufacturer}_{read_product_manufactured_year}"
-                    folderstructure=f"{read_product_type}_{read_product_manufacturer}_{read_product_manufactured_year}"
+                    folderstructure=f"{read_product_type_manufactured_year}"
                     
                     KDB_PRODUCT_DIR = os.path.join(app.config['KDB_DIR'], folderstructure)
                     app.config["KNOWLEDGE_GRAPH"] = os.path.join(KDB_PRODUCT_DIR, "knowledgedatabase")
                     
-                    datafilename = f"{read_product_type}_{read_product_manufacturer}_{read_product_manufactured_year}_kdb_data.csv"
+                    datafilename = f"{read_product_type_manufactured_year}_kdb_data.csv"
                     global llmfolderstructure
                     #product_types=read_product_types,product_manufacturers=read_product_manufacturers,product_years=read_product_years
-                    return render_template('/chatbot.html',product_types=read_product_type,product_manufacturers=read_product_manufacturer,product_years=read_product_year)
+                    return render_template('/chatbot.html',product_type_manufactured_year=product_type_manufactured_year,default_product_type_manufactured_year=default_product_type_manufactured_year)
     except Exception as error:
         print("An exception occurred:", error)
         exc_type, fname, lineno = sys.exc_info()
         print(exc_type, fname, lineno)
     
-    return render_template("chatbot.html",product_types=product_types,product_manufacturers=product_manufacturers,product_years=product_years,filenamebeginswith=filenamebeginswith)
+    return render_template("chatbot.html",product_type_manufactured_year=product_type_manufactured_year)
     #return render_template("aimodeltraining.html", "")       
     #return render_template('mechchatbotllm.html')
 
@@ -512,11 +527,13 @@ def handle_message(data):
     unique_joint_list = []
     unique_joint_list = []
     user_message = data['message']
-    read_product_type = data.get('product_type')
+    '''read_product_type = data.get('product_type')
     read_product_manufacturer = data.get('product_manufacturer')
-    read_product_manufactured_year = data.get('manufactured_year')
+    read_product_manufactured_year = data.get('manufactured_year')'''
+    read_product_type_manufactured_year = data.get('product_type_manufactured_year')
+    print('read_product_type_manufactured_year',read_product_type_manufactured_year)
     app.config["KDB_DIR"] = "static/knowledgedb/"
-    llmfolderstructure=f"{read_product_type}_{read_product_manufacturer}_{read_product_manufactured_year}"
+    llmfolderstructure=f"{read_product_type_manufactured_year}"
     KDB_PRODUCT_DIR = os.path.join(app.config['KDB_DIR'], llmfolderstructure)
     app.config["KNOWLEDGE_GRAPH"] = os.path.join(KDB_PRODUCT_DIR, "knowledgedatabase")
     #/img_folder/segmentimages
@@ -533,8 +550,6 @@ def handle_message(data):
         component_urls =  dict(llm_result[2])
         unique_tool_list = list(llm_result[3])
         unique_joint_list = list(llm_result[4])
-
-
     else:
         response='You havent chosen the product type, manufacturer and year. Please choose it and click submit and then try again.'
         components_list = []

@@ -92,7 +92,14 @@
                                     <label for="tags">Choose the suitable options and click submit</label></div><br>
                                     <form method="post" action="/chatbot.html" enctype="multipart/form-data">
                                          <div class="form-group">
-                                             <label for="product_type">Product Type:</label>
+                                            <label for="product_type_manufactured_year">Choose Product:</label>
+                                            <select id="product_type_manufactured_year" name="product_type_manufactured_year" class="form-control">
+                                                {% for type in product_type_manufactured_year %}
+                                                <!--<option value="{{ type }}">{{ type }}</option>-->
+                                                <option value="{{ type }}" {% if type == default_product_type_manufactured_year %}selected{% endif %}>{{ type }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <!-- <label for="product_type">Product Type:</label>
                                              <select id="product_type" name="product_type" class="form-control">
                                                  {% for type in product_types %}
                                                  <option value="{{ type }}">{{ type }}</option>
@@ -112,7 +119,7 @@
                                                  <option value="{{ year }}">{{ year }}</option>
                                                  {% endfor %}
                                              </select>
-
+                                            -->
                                             
                                          </div>
                              
@@ -146,20 +153,23 @@
                         
                                 $('#send-btn').click(function() {
                                     const userInput = $('#user-input').val();
-                                    const productType = $('#product_type').val();
-                                    const productManufacturer = $('#product_manufacturer').val();
-                                    const manufacturedYear = $('#manufactured_year').val();
-
+                                    //const productType = $('#product_type').val();
+                                    //const productManufacturer = $('#product_manufacturer').val();
+                                    //const manufacturedYear = $('#manufactured_year').val();
+                                    const product_type_manufactured_year = $('#product_type_manufactured_year').val();
+                                   
                                     if (userInput) {
+                                        $('#send-btn').prop('disabled', true);
                                         // Append the user message to the chat box
                                         $('#chat-box').append('<div class="user-message"><strong>You:</strong> ' + userInput + '</div>');
 
                                         // Emit the user message along with form data to the server
                                         socket.emit('user_message', {
                                             message: userInput,
-                                            product_type: productType,
-                                            product_manufacturer: productManufacturer,
-                                            manufactured_year: manufacturedYear
+                                            //product_type: productType,
+                                            //product_manufacturer: productManufacturer,
+                                            //manufactured_year: manufacturedYear
+                                            product_type_manufactured_year: product_type_manufactured_year
                                         });
 
                                         // Clear the input field
@@ -208,6 +218,7 @@
 
                                         // Append the final message to the chat box
                                         $('#chat-box').append(finalMessage);    
+                                        $('#send-btn').prop('disabled', false);
                                 
                                 
                                 });
