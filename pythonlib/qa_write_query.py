@@ -478,7 +478,7 @@ def get_chat_completion(prompt, model="llama3-70b-8192"):
                 Instructions:
                 - Summarize the key safety steps.
                 - Highlight the most critical precautions.
-                - Ensure the response is structured in a clear, step-by-step manner.
+                - Ensure the response or instructions is structured in a clear, step-by-step manner.
                 """,
             }
         ],
