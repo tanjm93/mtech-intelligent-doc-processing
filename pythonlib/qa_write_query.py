@@ -84,7 +84,7 @@ class NerExtractor:
             #cc_segment_image = None
 
             # Check for at least one word match
-            if self.word_match_check(component, replaced_component):
+            if self.word_match_check(component, replaced_component) and max_similarity>=0.6:
                 replaced_components.append(replaced_component)
                 if cc_segment_images != None:
                     cc_segment_images.append(cc_segment_image)
@@ -516,60 +516,66 @@ def main(stage,faiss_model_names,qa_model_names,main_path,source_filename_pdf,qu
         faiss_manager = FAISSIndexManager(faiss_model_names,path,stage, df)
         rag_manager = RAGQueryManager(faiss_model_names, df, faiss_manager,qa_model_names,question )
         result = rag_manager.query(question)
-        print('result.shape',result.shape)
+        #print('result.shape',result.shape)
         #print(result['Answer'])
 
-        component_image_map=dict()
-        for index, row in result.iterrows():
-            # Safely evaluate string to list (if necessary)
-            #print(len(list(row['COMPONENT'])))
-            #print(row['CC_SEGMENT_IMAGES'])
-            
-            if len(row['COMPONENT']) >= 3 and len(row['CC_SEGMENT_IMAGES']) >= 3:
-                #print(row['COMPONENT'])
-                components = ast.literal_eval(row['COMPONENT']) if isinstance(row['COMPONENT'], str) else row['COMPONENT']
-                images = ast.literal_eval(row['CC_SEGMENT_IMAGES']) if isinstance(row['CC_SEGMENT_IMAGES'], str) else row['CC_SEGMENT_IMAGES']
-                for image_check in images:
-                    #print('image_check')
-                    if image_check:
-                        if not os.path.isfile(main_path+'img_folder/segmentimages/'+image_check):
-                            sourcefile=main_path+'/img_folder/'+image_check
-                            destfile=main_path+'/img_folder/segmentimages/'+image_check
-                            shutil.copyfile(sourcefile, destfile)
-                            print('image file moved')
-                    
-                # Create dictionary by zipping components and images
-                component_image_map.update(dict(zip(components, images)))
-
-                # Output the result for this row
-                #print(f"Row {index} - Component to Image Mapping: {component_image_map}")
-        component_image_map = {
-            k: v for k, v in component_image_map.items() if v is not None
-        }
-        component_names = list(component_image_map.keys())
-
-        # Convert string representation of lists to actual lists
-        #result_df_final['COMPONENT'] = result_df_final['COMPONENT'].apply(ast.literal_eval)
-        result['TOOL'] = result['TOOL'].apply(safe_literal_eval)
-
-        # Flatten the lists and get unique components
-        unique_tool = set([item for sublist in result['TOOL'] for item in sublist])
-
-        # Add prefix 'Component - ' to each unique component
-        unique_tool_list = [tool for tool in unique_tool]
-        #print(unique_tool_list_1)
-
-        result['JOINT'] = result['JOINT'].apply(safe_literal_eval)
-
-        # Flatten the lists and get unique components
-        unique_joint = set([item for sublist in result['JOINT'] for item in sublist])
-
-        # Add prefix 'Component - ' to each unique component
-        unique_joint_list = [joint for joint in unique_joint]
-        #print(unique_joint_list)
         if result is None or result.empty:
             final_answers = "The question is out of scope. please try with questions related to the document."
+            print(final_answers)
+            component_names = list()
+            component_image_map = dict()
+            unique_tool_list=list()
+            unique_joint_list=list()
+            
         else:
+            component_image_map=dict()
+            for index, row in result.iterrows():
+                # Safely evaluate string to list (if necessary)
+                #print(len(list(row['COMPONENT'])))
+                #print(row['CC_SEGMENT_IMAGES'])
+                
+                if len(row['COMPONENT']) >= 3 and len(row['CC_SEGMENT_IMAGES']) >= 3:
+                    #print(row['COMPONENT'])
+                    components = ast.literal_eval(row['COMPONENT']) if isinstance(row['COMPONENT'], str) else row['COMPONENT']
+                    images = ast.literal_eval(row['CC_SEGMENT_IMAGES']) if isinstance(row['CC_SEGMENT_IMAGES'], str) else row['CC_SEGMENT_IMAGES']
+                    for image_check in images:
+                        #print('image_check')
+                        if image_check:
+                            if not os.path.isfile(main_path+'img_folder/segmentimages/'+image_check):
+                                sourcefile=main_path+'/img_folder/'+image_check
+                                destfile=main_path+'/img_folder/segmentimages/'+image_check
+                                shutil.copyfile(sourcefile, destfile)
+                                print('image file moved')
+                        
+                    # Create dictionary by zipping components and images
+                    component_image_map.update(dict(zip(components, images)))
+
+                    # Output the result for this row
+                    #print(f"Row {index} - Component to Image Mapping: {component_image_map}")
+            component_image_map = {
+                k: v for k, v in component_image_map.items() if v is not None
+            }
+            component_names = list(component_image_map.keys())
+
+            # Convert string representation of lists to actual lists
+            #result_df_final['COMPONENT'] = result_df_final['COMPONENT'].apply(ast.literal_eval)
+            result['TOOL'] = result['TOOL'].apply(safe_literal_eval)
+
+            # Flatten the lists and get unique components
+            unique_tool = set([item for sublist in result['TOOL'] for item in sublist])
+
+            # Add prefix 'Component - ' to each unique component
+            unique_tool_list = [tool for tool in unique_tool]
+            #print(unique_tool_list_1)
+
+            result['JOINT'] = result['JOINT'].apply(safe_literal_eval)
+
+            # Flatten the lists and get unique components
+            unique_joint = set([item for sublist in result['JOINT'] for item in sublist])
+
+            # Add prefix 'Component - ' to each unique component
+            unique_joint_list = [joint for joint in unique_joint]
+            #print(unique_joint_list)
             response = ' '.join(result['Answer'].tolist()) +'.'
             text = get_chat_completion(response)
             final_answers_1 = text_to_html(text)
