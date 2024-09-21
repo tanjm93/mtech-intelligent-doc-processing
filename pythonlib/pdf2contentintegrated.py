@@ -20,6 +20,7 @@ from aimodelbuild import aienginmodelbuild
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('averaged_perceptron_tagger')
+nltk.download('averaged_perceptron_tagger_eng')
 nltk.download('wordnet')
 from TextPreprocessing import text_preprocessing
 class pdf2content_integrated:
