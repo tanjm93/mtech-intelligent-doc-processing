@@ -552,7 +552,7 @@ def main(stage,faiss_model_names,qa_model_names,main_path,source_filename_pdf,qu
         #print(result['Answer'])
 
         if result is None or result.empty:
-            final_answers = "I dont understand your question. example: you can add components, are your trying to remove the component? etc."
+            final_answers = "I dont understand your question. Can you please rephrase your question by adding components, are your trying to remove the component? etc."
             print(final_answers)
             component_names = list()
             component_image_map = dict()
