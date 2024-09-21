@@ -546,20 +546,20 @@ def handle_message(data):
         #print(llm_result.shape)
         response = llm_result[0]
         #print(response)
-        components_list = list(llm_result[1])
+        '''components_list = list(llm_result[1])
         component_urls =  dict(llm_result[2])
         unique_tool_list = list(llm_result[3])
-        unique_joint_list = list(llm_result[4])
+        unique_joint_list = list(llm_result[4])'''
     else:
         response='You havent chosen the product type, manufacturer and year. Please choose it and click submit and then try again.'
-        components_list = []
+        '''components_list = []
         component_urls = {}
         unique_joint_list = []
-        unique_joint_list = []
-    print(components_list)
-    print()
+        unique_joint_list = []'''
+    #print(components_list)
+    #print()
     #print(response)
-    emit('bot_response', {'message': response, 'components_list':components_list,'component_urls':component_urls,'SEGMENTIMAGES':app.config["SEGMENTIMAGES"],'unique_tool_list':unique_tool_list,'unique_joint_list':unique_joint_list})
+    emit('bot_response', {'message': response})#, 'components_list':components_list,'component_urls':component_urls,'SEGMENTIMAGES':app.config["SEGMENTIMAGES"],'unique_tool_list':unique_tool_list,'unique_joint_list':unique_joint_list})
     #emit('bot_response', {'message': response, 'components_list':components_list,'component_urls':component_urls,'SEGMENTIMAGES':app.config["SEGMENTIMAGES"]})#,'unique_tool_list':unique_tool_list,'unique_joint_list':unique_joint_list})
 if __name__ == '__main__':
     app.run()

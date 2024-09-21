@@ -462,7 +462,15 @@ def text_to_html(text):
     return html
 
 
-def get_chat_completion(prompt, model="llama3-70b-8192"):
+def get_chat_completion(prompt,component_image_map, unique_tool_list,unique_joint_list, model="llama3-70b-8192"):
+    
+    '''
+    for component, directory in component_image_map.items():
+        # Embed directory URL in the component name with red-colored text
+        url = f"{directory}"
+        prompt = prompt.replace(component, f'<a href="{url}" style="color: red;">{component}</a>')
+
+    '''
     client = Groq(
         api_key='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',
     )
@@ -473,12 +481,26 @@ def get_chat_completion(prompt, model="llama3-70b-8192"):
                 "role": "user",
                 #"content": prompt,
                 "content": f"""
-                {prompt}
+                {prompt} + {unique_tool_list} + {unique_joint_list} + {component_image_map}
                 
                 Instructions:
+                - Provide a direct response without any prefacing.
                 - Summarize the key safety steps.
                 - Highlight the most critical precautions.
                 - Ensure the response or instructions is structured in a clear, step-by-step manner.
+                - give the output in html code format
+                - unique_tool_list goes to section : Related tools
+                - unique_joint_list goes to section : Related joints
+                - mark in blue font for unique_tool_list and matching unique_tool_list in all the places.
+                - mark in green font for unique_joint_list and matching unique_joint_list in all the places.
+                - emdedd a href="url" target="_blank" for each component 
+                    for component, directory in component_image_map.items():
+                        # Embed directory URL in the component name with red-colored text
+                        url = directory
+                        prompt = prompt.replace(component, f'<a href=url target="_blank" style="color: red;">component</a>')
+                    
+                - mark in red font for component and matching component in all the places and instructions.
+                - add a new section for components
                 """,
             }
         ],
@@ -492,10 +514,12 @@ def main(stage,faiss_model_names,qa_model_names,main_path,source_filename_pdf,qu
 #qa_write_query_main('write',faiss_model_names,qa_model_names,
     #app.config['KNOWLEDGE_GRAPH']+"/",os.path.join(app.config['UPLOAD_DIR'], source_filename_pdf))
     #main_path = main_path+'/'
+    print("main_path",main_path)
     path =main_path+"/confirmedkdb/"
+    print('path',path)
     #imagepath=os.path.join(os.path.join(main_path, "img_folder"),"segmentimages")          
     result=pd.DataFrame()
-    csv_path = path+'/'+f'{faiss_model_names}_data.csv'
+    csv_path = path+f'{faiss_model_names}_data.csv'
     final_answers=""
 
     print(source_filename_pdf)
@@ -528,7 +552,7 @@ def main(stage,faiss_model_names,qa_model_names,main_path,source_filename_pdf,qu
         #print(result['Answer'])
 
         if result is None or result.empty:
-            final_answers = "The question is out of scope. please try with questions related to the document."
+            final_answers = "I dont understand your question. example: you can add components, are your trying to remove the component? etc."
             print(final_answers)
             component_names = list()
             component_image_map = dict()
@@ -540,28 +564,42 @@ def main(stage,faiss_model_names,qa_model_names,main_path,source_filename_pdf,qu
             for index, row in result.iterrows():
                 # Safely evaluate string to list (if necessary)
                 #print(len(list(row['COMPONENT'])))
-                #print(row['CC_SEGMENT_IMAGES'])
+                #print(row['COMPONENT'],row['CC_SEGMENT_IMAGES'])
                 
                 if len(row['COMPONENT']) >= 3 and len(row['CC_SEGMENT_IMAGES']) >= 3:
                     #print(row['COMPONENT'])
-                    components = ast.literal_eval(row['COMPONENT']) if isinstance(row['COMPONENT'], str) else row['COMPONENT']
+            # Add prefix 'Component - ' to each unique component
+                    components = ast.literal_eval(row['COMPONENT'].replace('Component - ','')) if isinstance(row['COMPONENT'], str) else row['COMPONENT']
                     images = ast.literal_eval(row['CC_SEGMENT_IMAGES']) if isinstance(row['CC_SEGMENT_IMAGES'], str) else row['CC_SEGMENT_IMAGES']
+                    #updated_images = [main_path+'/img_folder/segmentimages/'+image for image in images]
+                    updated_images = [main_path+'img_folder/segmentimages/'+ (image if image is not None else '')
+                                        for image in images
+]
                     for image_check in images:
                         #print('image_check')
                         if image_check:
                             if not os.path.isfile(main_path+'img_folder/segmentimages/'+image_check):
-                                sourcefile=main_path+'/img_folder/'+image_check
-                                destfile=main_path+'/img_folder/segmentimages/'+image_check
+                                sourcefile=main_path+'img_folder/'+image_check
+                                destfile=main_path+'img_folder/segmentimages/'+image_check
                                 shutil.copyfile(sourcefile, destfile)
                                 print('image file moved')
                         
                     # Create dictionary by zipping components and images
-                    component_image_map.update(dict(zip(components, images)))
-
+                    #images = [main_path+'/img_folder/segmentimages/'+item for item in images]
+                    component_image_map.update(dict(zip(components, updated_images)))
+                    #print('component_image_map',component_image_map)
+                    '''for component, directory in component_image_map.items():
+                        if directory:  # Check if directory is not None, blank, or empty
+                            print("directory okie")
+                        else:
+                            print('component',component)
+                            print("directory",directory)
+                            # Remove the component from the dictionary if the directory is empty or None
+                            del component_image_map[component]
                     # Output the result for this row
-                    #print(f"Row {index} - Component to Image Mapping: {component_image_map}")
+                    #print(f"Row {index} - Component to Image Mapping: {component_image_map}")'''
             component_image_map = {
-                k: v for k, v in component_image_map.items() if v is not None
+                k: v for k, v in component_image_map.items() if (v is not None and v != main_path+'img_folder/segmentimages/')
             }
             component_names = list(component_image_map.keys())
 
@@ -585,9 +623,10 @@ def main(stage,faiss_model_names,qa_model_names,main_path,source_filename_pdf,qu
             unique_joint_list = [joint for joint in unique_joint]
             #print(unique_joint_list)
             response = ' '.join(result['Answer'].tolist()) +'.'
-            text = get_chat_completion(response)
-            final_answers_1 = text_to_html(text)
-            final_answers = final_answers_1.replace('**','')
+            text = get_chat_completion(response,component_image_map, unique_tool_list,unique_joint_list)
+            final_answers = text
+            #final_answers_1 = text_to_html(text)
+            final_answers = final_answers.replace('**','')#.replace('Here is the output in HTML code format:','')
         print(final_answers)
         return final_answers, component_names, component_image_map, unique_tool_list, unique_joint_list
 
