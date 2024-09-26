@@ -22,6 +22,7 @@ nltk.download('stopwords')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('averaged_perceptron_tagger_eng')
 nltk.download('wordnet')
+nltk.download('punkt_tab')
 from TextPreprocessing import text_preprocessing
 class pdf2content_integrated:
     def __init__(self,source_pdf_file_path,out_folder,filename,model_path,image_path,confirmeddb_path):
