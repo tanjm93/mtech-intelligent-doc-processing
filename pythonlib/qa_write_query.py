@@ -472,7 +472,7 @@ def get_chat_completion(prompt,component_image_map, unique_tool_list,unique_join
 
     '''
     client = Groq(
-        api_key='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',
+        api_key='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',
     )
 
     chat_completion = client.chat.completions.create(
