@@ -1,0 +1,19 @@
+Component - jscia0761gb
+Component - service plug switch
+Component - service plug switch bracket
+Component - highvoltage battery harness
+Component - bus bar nut cap
+Component - bus bar
+Component - bus bar integrate noise filter
+Component - battery junction box
+Component - harness bracket
+Component - vehicle communication harness
+Component - snap ring
+Component - ptc heater harness connector
+Component - highvoltage harness connector
+Component - connector flange
+Component - seal
+Component - voltage detection harness
+Component - battery current sensor integrate
+Component - : always replace every disa
+Component - : n·m kgm inlb
